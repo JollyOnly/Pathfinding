@@ -8,6 +8,7 @@ public class Node : IHeapItem<Node>
     public Vector3 worldPosition;
     public int gridX;
     public int gridY;
+    public int movementPenalty;
 
     public List<Node> neighboursList;
 
@@ -27,12 +28,13 @@ public class Node : IHeapItem<Node>
 
     public Node parent;
 
-    public Node(bool isWalkable, Vector3 worldPosition, int gridX, int gridY)
+    public Node(bool isWalkable, Vector3 worldPosition, int gridX, int gridY, int movementPenalty)
     {
         this.isWalkable = isWalkable;
         this.worldPosition = worldPosition;
         this.gridX = gridX;
         this.gridY = gridY;
+        this.movementPenalty = movementPenalty; 
     }
 
     public int CompareTo(Node nodeToCompare)

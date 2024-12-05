@@ -7,6 +7,9 @@ public class Grid : MonoBehaviour
     public LayerMask unwalkableMask;
     public Vector2 gridWorldSize;
     public float nodeRadius;
+    public TerrainType[] walkableRegions;
+    private LayerMask walkableMask;
+    private Dictionary<float, int> walkableRegionsDictionary = new Dictionary<float, int>();
     Node[,] grid;
     public int MaxSize
     {
@@ -23,6 +26,13 @@ public class Grid : MonoBehaviour
         nodeDiameter = nodeRadius * 2;
         gridSizeX = Mathf.RoundToInt(gridWorldSize.x / nodeDiameter);
         gridSizeY = Mathf.RoundToInt(gridWorldSize.y / nodeDiameter);
+
+        foreach (TerrainType region in walkableRegions)
+        {
+            walkableMask |= region.terrainMask.value;
+
+            walkableRegionsDictionary.Add(Mathf.Log(region.terrainMask.value, 2), region.terrainPenalty);
+        }
         CreateGrid();
     }
 
@@ -52,7 +62,20 @@ public class Grid : MonoBehaviour
             {
                 Vector3 worldPoint = worldBottomLeft + Vector3.right * (x * nodeDiameter + nodeRadius) + Vector3.forward * (y * nodeDiameter + nodeRadius);
                 bool isWalkable = !(Physics.CheckSphere(worldPoint, nodeRadius, unwalkableMask));
-                grid[x, y] = new Node(isWalkable, worldPoint, x, y);
+
+                int movementPenalty = 0;
+
+                if (isWalkable)
+                {
+                    Ray ray = new Ray(worldPoint + Vector3.up * 50, Vector3.down);
+                    RaycastHit hit;
+                    if (Physics.Raycast(ray, out hit, 100, walkableMask))
+                    {
+                        walkableRegionsDictionary.TryGetValue(hit.collider.gameObject.layer, out movementPenalty);
+                    }
+                }
+
+                grid[x, y] = new Node(isWalkable, worldPoint, x, y, movementPenalty);
             }
         }
 
@@ -97,5 +120,12 @@ public class Grid : MonoBehaviour
         int y = Mathf.RoundToInt((gridSizeY - 1) * percentY);
 
         return grid[x, y];
+    }
+
+    [System.Serializable]
+    public class TerrainType
+    {
+        public LayerMask terrainMask;
+        public int terrainPenalty;
     }
 }
