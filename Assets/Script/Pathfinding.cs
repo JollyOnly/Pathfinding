@@ -6,27 +6,20 @@ using UnityEngine;
 
 public class Pathfinding : MonoBehaviour
 {
-    PathRequestManager pathRequestManager;
     Grid grid;
 
     private void Awake()
     {
-        pathRequestManager = GetComponent<PathRequestManager>();
         grid = GetComponent<Grid>();
     }
 
-    public void StartFindingPath(Vector3 pathStart, Vector3 pathEnd)
-    {
-        StartCoroutine(FindPath(pathStart, pathEnd));
-    }
-
-    private IEnumerator FindPath(Vector3 startPos, Vector3 targetPos)
+    public void FindPath(PathRequest pathRequest, Action<PathResult> callback)
     {
         Vector3[] waypointsArray = new Vector3[0];
         bool pathSuccess = false;
 
-        Node startNode = grid.NodeFormWorldPoint(startPos);
-        Node targetNode = grid.NodeFormWorldPoint(targetPos);
+        Node startNode = grid.NodeFormWorldPoint(pathRequest.pathStart);
+        Node targetNode = grid.NodeFormWorldPoint(pathRequest.pathEnd);
 
         if (startNode.isWalkable && targetNode.isWalkable)
         {
@@ -72,14 +65,13 @@ public class Pathfinding : MonoBehaviour
             }
         }
 
-        yield return null;
-
         if (pathSuccess)
         {
             waypointsArray = RetracePath(startNode, targetNode);
+            pathSuccess = waypointsArray.Length > 0;
         }
 
-        pathRequestManager.FinishProcessingPath(waypointsArray, pathSuccess);
+        callback(new PathResult(waypointsArray, pathSuccess, pathRequest.callback));
     }
 
     private Vector3[] RetracePath(Node startNode, Node endNode)
@@ -107,8 +99,17 @@ public class Pathfinding : MonoBehaviour
 
         for (int i = 1; i < path.Count; i++)
         {
-            Vector2 directionNew = new Vector2(path[i-1].gridX - path[i].gridX, path[i - 1].gridY - path[i].gridY);
+            Vector2 directionNew = new Vector2(path[i - 1].gridX - path[i].gridX, path[i - 1].gridY - path[i].gridY);
+
+            /*
             if (directionNew != directionOld)
+            {
+                waypointsList.Add(path[i].worldPosition);
+            }
+             */
+
+            // adjust waypoints number
+            if ((i % 6) == 0)
             {
                 waypointsList.Add(path[i].worldPosition);
             }
